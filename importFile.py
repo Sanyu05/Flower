@@ -161,7 +161,7 @@ def get_data_summary(data, metadata):
 # Simple alternative function if the above still has issues
 def simple_csv_loader(file_path):
     """Simple CSV loader with proper number handling"""
-    data = {}
+    data = {} #: Empty dictionary that will store {'column_name': numpy_array} pairs
     metadata = {
         'file_path': str(file_path),
         'column_names': [],
@@ -169,7 +169,7 @@ def simple_csv_loader(file_path):
         'num_rows': 0,
         'num_cols': 0,
         'has_header': True,
-        'delimiter': ','
+        'delimiter': ',' # delimiter is assumed to be comma for simplicity
     }
     
     with open(file_path, 'r', encoding='utf-8') as file:
@@ -180,22 +180,22 @@ def simple_csv_loader(file_path):
             return data, metadata
         
         headers = reader.fieldnames
-        metadata['column_names'] = headers
+        metadata['column_names'] = headers # List of column names - program assumes first row is header
         metadata['num_cols'] = len(headers)
         metadata['num_rows'] = len(rows)
         
         for header in headers:
-            column_data = [row[header] for row in rows if row[header] != '']
+            column_data = [row[header] for row in rows if row[header] != ''] 
             
             if not column_data:
                 data[header] = np.array([])
                 metadata['column_types'].append('empty')
                 continue
             
-            # Try numeric conversion with proper cleaning
+            # Try numeric conversion with proper cleaning - only two types: numeric or string
             if _can_convert_to_numeric(column_data, header):
-                numeric_data = []
-                for item in column_data:
+                numeric_data = [] # Try to convert all items to numeric
+                for item in column_data: # Try to clean and convert each item
                     try:
                         numeric_data.append(_clean_number(item))
                     except ValueError:
@@ -203,7 +203,7 @@ def simple_csv_loader(file_path):
                         data[header] = np.array(column_data, dtype=str)
                         metadata['column_types'].append('string')
                         break
-                else:
+                else: 
                     # All items converted successfully
                     data[header] = np.array(numeric_data)
                     metadata['column_types'].append('numeric')
@@ -213,7 +213,7 @@ def simple_csv_loader(file_path):
     
     return data, metadata
 
-def _can_convert_to_numeric(column_data, header_name):
+def _can_convert_to_numeric(column_data, header_name): # returns True if column can be treated as numeric
     """Check if column should be treated as numeric"""
     header_lower = header_name.lower()
     
@@ -222,14 +222,14 @@ def _can_convert_to_numeric(column_data, header_name):
                       'amount', 'total', 'count', 'number', 'percentage', 'percent',
                       'year', 'time', 'duration', 'runtime', 'length']
     
-    if any(indicator in header_lower for indicator in numeric_headers):
-        return True
+    if any(indicator in header_lower for indicator in numeric_headers): # If header name suggests numeric data, assume numeric
+        return True 
     
-    # Try to convert a sample
-    sample_size = min(5, len(column_data))
+    # Try to convert a sample to check if numeric
+    sample_size = min(5, len(column_data)) 
     for i in range(sample_size):
         try:
-            _clean_number(column_data[i])
+            _clean_number(column_data[i]) # Try to clean and convert
         except ValueError:
             return False
     return True
