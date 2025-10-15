@@ -1,5 +1,5 @@
 Problems/Need to do:
-1)Some numeric data may be converted to string if it has strange numbers in it - for example $134.97M  
+1)Some numeric data may notbe converted to string if it has strange numbers in it - for example $134.97M  
 current version handles M - Million, B-Billion, K-Thousand
 
 2) Need to test with more data sets to see where the data does not get converted correctly - need to clean but on a case by case basis?
