@@ -1,9 +1,11 @@
 import importFile as imf
 import numpy as np
+import input as ipt
 
 # Try the simple loader first
 try:
-    data, metadata = imf.simple_csv_loader('movies.csv')  ## need a to input file name from user
+    file_name = ipt.input_name()  # Get the file name from user input
+    data, metadata = imf.simple_csv_loader(file_name)  ## need a to input file name from user
     print("Successfully loaded with simple loader!")
     summary = imf.get_data_summary(data, metadata)
     print(f"Loaded: {summary['shape']}")
