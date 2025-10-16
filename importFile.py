@@ -242,6 +242,9 @@ def _clean_number(value):
     original_value = str(value).strip()
     cleaned = original_value
     
+    # Remove parentheses around years like (1972)
+    cleaned = cleaned.strip('()')
+
     # Remove currency symbols and commas
     cleaned = cleaned.replace(',', '')  # Remove commas from numbers
     cleaned = cleaned.replace('$', '')  # Remove dollar signs
@@ -273,6 +276,13 @@ def _clean_number(value):
     # Convert to float and apply multiplier
     try:
         result = float(cleaned) * multiplier
+
+        # If value is a whole number (like 1972.0), convert to int
+        if result.is_integer():
+            result = int(result)
+            
         return result
     except ValueError:
         raise ValueError(f"Could not convert '{original_value}' to number")
+    
+
