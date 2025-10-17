@@ -3,27 +3,27 @@ import numpy as np
 
 def interactive_plot(data, metadata):
     """
-    Create interactive plots based on user selection.
-    Supports: bar, line, scatter, histogram, and pie charts.
+    Createing interactive plots based on user selection.
+    Types of graphs that the program currently supports: bar, line, scatter, histogram, and pie charts.
     
     Args:
         data (dict): Dictionary mapping column names to NumPy arrays
         metadata (dict): Metadata including column names, types, row/column counts
     """
-    columns = metadata['column_names']
-    col_types = metadata['column_types']
+    columns = metadata['column_names'] # access column names from metadata 
+    col_types = metadata['column_types'] # access column types from metadata 
     
-    print("\nAvailable columns:", columns)
+    print("\nAvailable columns:", columns) 
 
     # Select plot type
     plot_type = input("Enter plot type (bar, line, scatter, histogram, pie): ").lower()
     if plot_type not in ['bar', 'line', 'scatter', 'histogram', 'pie']:
         print("Invalid plot type. Using bar chart.")
-        plot_type = 'bar'
+        plot_type = 'bar' # default to bar chart
 
-    numeric_columns = [col for col, typ in zip(columns, col_types) if typ == 'numeric']
+    numeric_columns = [col for col, typ in zip(columns, col_types) if typ == 'numeric'] # list of numeric columns
 
-    # HISTOGRAM: only need one numeric column
+    # HISTOGRAM: only need one numeric column 
     if plot_type == 'histogram':
         print("Columns available for histogram (numeric only):", numeric_columns)
         while True:
@@ -31,7 +31,7 @@ def interactive_plot(data, metadata):
             if hist_column in numeric_columns:
                 break
             print(f"Invalid column '{hist_column}'. Must be numeric. Try again.")
-        
+        # Create histogram
         plt.figure(figsize=(8, 6))
         plt.hist(data[hist_column], bins=20, color='purple', edgecolor='black')
         plt.xlabel(hist_column)
@@ -41,8 +41,8 @@ def interactive_plot(data, metadata):
         plt.show()
         return
     
-    # PIE CHART: needs categorical column
-    elif plot_type == 'pie':
+    # PIE CHART: needs categorical column 
+    elif plot_type == 'pie': 
         cat_columns = [col for col, typ in zip(columns, col_types) if typ != 'numeric']
         if not cat_columns:
             print("No categorical columns available for pie chart.")
@@ -101,7 +101,7 @@ def interactive_plot(data, metadata):
         plt.plot(x_values, y_values, marker='o', linestyle='-', color='green')
     elif plot_type == 'scatter':
         plt.scatter(x_values, y_values, color='red', alpha=0.7)
-        # Add regression trendline for scatter plots with numeric x-axis
+        # Add regression trendline for scatter plots with numeric x-axis - works only if x is numeric
         if np.issubdtype(x_values.dtype, np.number):
             m, b = np.polyfit(x_values, y_values, 1)
             plt.plot(x_values, m*x_values + b, color='black', linestyle='--', label='Trendline')

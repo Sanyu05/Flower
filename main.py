@@ -3,9 +3,8 @@ import numpy as np
 import input as ipt
 import Visualization as viz
 
-# -------------------------------
-# STEP 1: Load CSV Data
-# -------------------------------
+## Loaading the daata interactively with fallback ## Robust loader currently does not work as intended ##
+
 def load_data_interactive():
     """
     Load CSV data using simple loader first, and fall back to robust loader if needed.
@@ -18,22 +17,21 @@ def load_data_interactive():
     
     try:
         data, metadata = imf.simple_csv_loader(file_name)
-        print("✅ Successfully loaded with simple loader!")
+        print(" Successfully loaded with simple loader!")
         return data, metadata
     except Exception as e:
-        print(f"⚠️ Simple loader failed: {e}")
+        print(f" Simple loader failed: {e}")
         # Fall back to robust loader
         try:
             data, metadata = imf.load_csv_data(file_name)
             print("✅ Successfully loaded with robust loader!")
             return data, metadata
         except Exception as e2:
-            print(f"❌ Both loaders failed: {e2}")
+            print(f"Both loaders failed: {e2}")
             exit(1)
 
-# -------------------------------
-# STEP 2: Display Summary
-# -------------------------------
+## Creating a print function for verification of data being loaded correctly ## Also to show user the summary of their data ##
+
 def print_summary(summary):
     print("\n" + "=" * 50)
     print("DATA SUMMARY")
@@ -58,19 +56,12 @@ def print_summary(summary):
         
         print()
 
-# -------------------------------
-# STEP 3: Manual Conversion Option
-# (Uses functions from importFile.py)
-# -------------------------------
-
-# -------------------------------
-# MAIN PROGRAM
-# -------------------------------
+## MAIN ##
 def main():
     """Main program loop for data analysis and visualization."""
     
     # Load data
-    data, metadata = load_data_interactive()
+    data, metadata = load_data_interactive() # Load data with interactive loader
     
     # Display initial summary
     summary = imf.get_data_summary(data, metadata)
