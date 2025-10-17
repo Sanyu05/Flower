@@ -1,6 +1,8 @@
 import importFile as imf
 import numpy as np
 import input as ipt
+import re
+import math
 
 # -------------------------------
 # STEP 1: Load CSV Data
