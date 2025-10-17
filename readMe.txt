@@ -4,7 +4,7 @@
 # Sorts the data columns into two types -> numeric and string
 # Displays a summary of the data (including mean, min, max etc) 
 # Allows the user to try to convert an incorrectly converted string column to numeric 
-# Gives the user to play the data - currently the options are [bar, line, scatter, histogram, pie]
+# Gives the user to plot the data - currently the options are [bar, line, scatter, histogram, pie]
 # Lets the user chose the columns they want to plot on the x-axis and y-axis
 # Stays in loop to create multiple plots
 
