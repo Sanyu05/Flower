@@ -1,6 +1,8 @@
 import csv
 import numpy as np
 from pathlib import Path
+import re
+import math
 
 """"""
 def load_csv_data(file_path): # Do not use, use simple_csv_loader instead #
@@ -242,6 +244,18 @@ def _clean_number(value):
     original_value = str(value).strip()
     cleaned = original_value
     
+    # --- Handle runtime strings like '2h 15min' or '150 min' ---
+    runtime_pattern = re.compile(r'(?:(\d+)h)?\s*(?:(\d+)m|min)?', re.IGNORECASE)
+    if any(unit in cleaned.lower() for unit in ['h', 'min']):
+        match = runtime_pattern.fullmatch(cleaned.replace(' ', ''))
+        if match:
+            hours = int(match.group(1)) if match.group(1) else 0
+            minutes = int(match.group(2)) if match.group(2) else 0
+            total_minutes = hours * 60 + minutes
+            return float(total_minutes)
+        else:
+            raise ValueError(f"Could not parse runtime '{original_value}'")
+
     # Remove parentheses around years like (1972)
     cleaned = cleaned.strip('()')
 
