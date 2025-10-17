@@ -2,34 +2,37 @@ import importFile as imf
 import numpy as np
 import input as ipt
 
-# Try the simple loader first
+# -------------------------------
+# STEP 1: Load CSV Data
+# -------------------------------
 try:
     file_name = ipt.input_name()  # Get the file name from user input
-    data, metadata = imf.simple_csv_loader(file_name)  ## need a to input file name from user
-    print("Successfully loaded with simple loader!")
+    data, metadata = imf.simple_csv_loader(file_name)
+    print("✅ Successfully loaded with simple loader!")
     summary = imf.get_data_summary(data, metadata)
-    print(f"Loaded: {summary['shape']}")
+    print(f"\nLoaded: {summary['shape']}")
     print("First few columns:")
     for col_name in list(metadata['column_names']):
         col_info = summary['columns'][col_name]
         print(f"  {col_name}: {col_info['type']} ({col_info['non_empty']} values)")
-        
+
 except Exception as e:
-    print(f"Simple loader failed: {e}")
+    print(f"⚠️ Simple loader failed: {e}")
     # Fall back to robust loader
     try:
-        data, metadata = imf.load_csv_data('customers-100.csv')
-        print("Successfully loaded with robust loader!")
+        data, metadata = imf.load_csv_data(file_name)
+        print("✅ Successfully loaded with robust loader!")
+        summary = imf.get_data_summary(data, metadata)
     except Exception as e2:
-        print(f"Both loaders failed: {e2}")
+        print(f"❌ Both loaders failed: {e2}")
+        exit(1)
 
-# Print detailed summaryclear
-#import pprint
-#pprint.pprint(summary, width=80, depth=3)
-
+# -------------------------------
+# STEP 2: Display Summary
+# -------------------------------
 def print_summary(summary):
-    print("=" * 50)
-    print(f"DATA SUMMARY")
+    print("\n" + "=" * 50)
+    print("DATA SUMMARY")
     print("=" * 50)
     print(f"File: {summary['file']}")
     print(f"Shape: {summary['shape']}")
@@ -49,19 +52,75 @@ def print_summary(summary):
         elif col_info['type'] == 'string':
             print(f"   Unique values: {col_info['unique_values']}")
         
-        print()  # Empty line between columns
+        print()
 
-'''''
- Usage
+# Print initial summary
 print_summary(summary)
 
-print(data['Customer Id'])  # First 5 CustomerID values
+# -------------------------------
+# STEP 3: Manual Conversion Option
+# -------------------------------
+def convert_string_to_numeric(data, metadata, column_name):
+    """Try converting a string column to numeric."""
+    if column_name not in data:
+        print(f"❌ Column '{column_name}' not found.")
+        return
 
-# Each column is a proper NumPy array
-print(type(data['First Name']))            # <class 'numpy.ndarray'>
-print(data['First Name'].shape)            # (100,) - 100 elements
-print(data['First Name'].dtype)            # <U8 - Unicode string, max 8 chars
-print(data['Index'].dtype)                 # float64 - numeric columns become floats
-'''''
-    
+    idx = metadata['column_names'].index(column_name)
+    if metadata['column_types'][idx] != 'string':
+        print(f"⚠️ Column '{column_name}' is not a string column.")
+        return
+
+    col_data = data[column_name]
+    new_data = []
+    success = True
+    for val in col_data:
+        try:
+            new_data.append(imf._clean_number(val))
+        except ValueError:
+            print(f"⚠️ Value '{val}' could not be converted — aborting conversion.")
+            success = False
+            break
+
+    if success:
+        data[column_name] = np.array(new_data)
+        metadata['column_types'][idx] = 'numeric'
+        print(f"✅ Column '{column_name}' successfully converted to numeric.")
+    else:
+        print(f"❌ Conversion of '{column_name}' failed — column left unchanged.")
+
+
+def prompt_user_for_conversion(data, metadata):
+    """Prompt user to convert string columns to numeric manually."""
+    string_cols = [col for col, t in zip(metadata['column_names'], metadata['column_types']) if t == 'string']
+    if not string_cols:
+        print("\nNo string columns available for conversion.")
+        return
+
+    print("\nString columns detected:")
+    for i, col in enumerate(string_cols, start=1):
+        print(f"{i}. {col}")
+
+    choice = input("\nEnter the number(s) of columns to convert (comma-separated), or press Enter to skip: ").strip()
+    if not choice:
+        return
+
+    try:
+        indices = [int(i.strip()) - 1 for i in choice.split(',')]
+        for idx in indices:
+            if 0 <= idx < len(string_cols):
+                convert_string_to_numeric(data, metadata, string_cols[idx])
+            else:
+                print(f"⚠️ Invalid selection: {idx + 1}")
+    except ValueError:
+        print("❌ Invalid input. Please enter valid numbers.")
+
+# -------------------------------
+# STEP 4: Run conversion prompt
+# -------------------------------
+prompt_user_for_conversion(data, metadata)
+
+# Update and reprint summary after potential conversion
+summary = imf.get_data_summary(data, metadata)
+print("\nUPDATED SUMMARY:")
 print_summary(summary)

@@ -1,6 +1,7 @@
 import csv
 import numpy as np
 from pathlib import Path
+import re
 
 """"""
 def load_csv_data(file_path): # Do not use, use simple_csv_loader instead #
@@ -235,54 +236,105 @@ def _can_convert_to_numeric(column_data, header_name): # returns True if column 
     return True
 
 def _clean_number(value):
-    """Clean and convert string numbers with commas, currency, and million/billion notation"""
-    if value is None or value == '' or str(value).strip() == '':
+    """
+    Clean and convert strings like '175 min', '$3.2M', '45%', etc. to float/int.
+    Ignores trailing text or units automatically.
+    """
+    if value is None:
         return float('nan')
-    
-    original_value = str(value).strip()
-    cleaned = original_value
-    
-    # Remove parentheses around years like (1972)
-    cleaned = cleaned.strip('()')
 
-    # Remove currency symbols and commas
-    cleaned = cleaned.replace(',', '')  # Remove commas from numbers
-    cleaned = cleaned.replace('$', '')  # Remove dollar signs
-    cleaned = cleaned.replace('€', '')  # Remove euro signs
-    cleaned = cleaned.replace('£', '')  # Remove pound signs
-    cleaned = cleaned.replace(' ', '')  # Remove spaces
-    
-    # Handle empty result after cleaning
-    if not cleaned or cleaned == '-':
-        raise ValueError("Not a numeric value")
-    
-    # Handle million/billion notation
+    original_value = str(value).strip()
+    if original_value == '':
+        return float('nan')
+
+    cleaned = original_value.strip('()')
+
+    # Remove common symbols and spaces
+    cleaned = cleaned.replace(',', '')
+    cleaned = cleaned.replace('$', '').replace('€', '').replace('£', '')
+    cleaned = cleaned.strip()
+
+    # Handle percentages
+    if cleaned.endswith('%'):
+        try:
+            return float(cleaned[:-1]) / 100
+        except ValueError:
+            pass
+
+    # Handle million/billion/k notation
     multiplier = 1
     if cleaned.upper().endswith('M'):
-        cleaned = cleaned[:-1]  # Remove the 'M'
+        cleaned = cleaned[:-1]
         multiplier = 1_000_000
     elif cleaned.upper().endswith('B'):
-        cleaned = cleaned[:-1]  # Remove the 'B'  
+        cleaned = cleaned[:-1]
         multiplier = 1_000_000_000
     elif cleaned.upper().endswith('K'):
-        cleaned = cleaned[:-1]  # Remove the 'K'
-        multiplier = 1_000
-    
-    # Handle percentage values
-    if cleaned.endswith('%'):
         cleaned = cleaned[:-1]
-        return float(cleaned) / 100
-    
-    # Convert to float and apply multiplier
-    try:
-        result = float(cleaned) * multiplier
+        multiplier = 1_000
 
-        # If value is a whole number (like 1972.0), convert to int
-        if result.is_integer():
-            result = int(result)
-            
-        return result
+    # Extract numeric part using regex (handles "175min", "12.5hours", etc.)
+    match = re.search(r"[-+]?\d*\.?\d+", cleaned)
+    if not match:
+        raise ValueError(f"Could not extract number from '{original_value}'")
+
+    num_str = match.group(0)
+
+    try:
+        result = float(num_str) * multiplier
+        return int(result) if result.is_integer() else result
     except ValueError:
         raise ValueError(f"Could not convert '{original_value}' to number")
-    
+
+def convert_string_to_numeric(data, metadata, column_name):
+    if column_name not in data:
+        raise KeyError(f"Column '{column_name}' not found in data")
+
+    if metadata['column_types'][metadata['column_names'].index(column_name)] != 'string':
+        print(f"Column '{column_name}' is not of type 'string'. No conversion needed.")
+        return
+
+    column_data = data[column_name]
+    numeric_data = []
+
+    success = True
+    for item in column_data:
+        try:
+            numeric_data.append(_clean_number(item))
+        except ValueError:
+            success = False
+            print(f"⚠️ Warning: '{item}' could not be converted. Conversion aborted.")
+            break
+
+    if success:
+        data[column_name] = np.array(numeric_data)
+        metadata['column_types'][metadata['column_names'].index(column_name)] = 'numeric'
+        print(f"✅ Successfully converted '{column_name}' to numeric.")
+    else:
+        print(f"❌ Column '{column_name}' remains as string (conversion failed).")
+
+def prompt_user_for_conversion(data, metadata):
+    """Prompt user to select string columns to convert to numeric manually."""
+    string_cols = [col for col, t in zip(metadata['column_names'], metadata['column_types']) if t == 'string']
+
+    if not string_cols:
+        print("No string columns available for conversion.")
+        return
+
+    print("\nString columns detected:")
+    for i, col in enumerate(string_cols, 1):
+        print(f"{i}. {col}")
+
+    choice = input("\nEnter the number(s) of columns to convert to numeric (comma-separated), or press Enter to skip: ").strip()
+    if not choice:
+        return
+
+    try:
+        indices = [int(i) - 1 for i in choice.split(',')]
+        for idx in indices:
+            col_name = string_cols[idx]
+            convert_string_to_numeric(data, metadata, col_name)
+    except (ValueError, IndexError):
+        print("Invalid selection. No columns converted.")
+
 
